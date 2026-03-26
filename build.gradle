@@ -43,8 +43,15 @@ repositories {
 	maven { url = "https://jitpack.io" }
 }
 
-dependencies {
+sourceSets {
+	testmod {
+		runtimeClasspath += main.runtimeClasspath
+		compileClasspath += main.compileClasspath
+	}
+}
 
+dependencies {
+	testmodImplementation sourceSets.main.output
 }
 
 neoForge {
@@ -53,6 +60,28 @@ neoForge {
 	mods {
 		"${project.neo_mod_id}" {
 			sourceSet(sourceSets.main)
+		}
+		"testmod" {
+			sourceSet(sourceSets.testmod)
+		}
+	}
+
+	runs {
+		testmodClient {
+			client()
+			ideName = "Test Mod Client"
+			sourceSet = sourceSets.testmod
+		}
+
+		testmodServer {
+			server()
+			ideName = "Test Mod Server"
+			sourceSet = sourceSets.testmod
+		}
+
+		configureEach {
+			systemProperty 'forge.logging.markers', 'REGISTRIES'
+			logLevel = org.slf4j.event.Level.INFO
 		}
 	}
 }

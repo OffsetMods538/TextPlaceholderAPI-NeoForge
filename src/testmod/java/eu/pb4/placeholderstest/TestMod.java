@@ -2,33 +2,40 @@ package eu.pb4.placeholderstest;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.serialization.JsonOps;
 import eu.pb4.placeholders.api.ParserContext;
-import eu.pb4.placeholders.api.ServerPlaceholderContext;
 import eu.pb4.placeholders.api.Placeholders;
+import eu.pb4.placeholders.api.ServerPlaceholderContext;
 import eu.pb4.placeholders.api.arguments.StringArgs;
 import eu.pb4.placeholders.api.node.LiteralNode;
 import eu.pb4.placeholders.api.node.TextNode;
-import eu.pb4.placeholders.api.parsers.*;
+import eu.pb4.placeholders.api.parsers.LegacyFormattingParser;
+import eu.pb4.placeholders.api.parsers.MarkdownLiteParserV1;
+import eu.pb4.placeholders.api.parsers.NodeParser;
+import eu.pb4.placeholders.api.parsers.TagLikeParser;
+import eu.pb4.placeholders.api.parsers.TagParser;
 import it.unimi.dsi.fastutil.Pair;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.arguments.ComponentArgument;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.network.chat.ResolutionContext;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+
 import java.util.List;
 
-import static net.minecraft.commands.Commands.literal;
 import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
 
-
-@SuppressWarnings("deprecation")
-public class TestMod implements ModInitializer {
+@Mod("testmod")
+public class TestMod {
     private static int perf(CommandContext<CommandSourceStack> context) {
         var input = context.getArgument("component", String.class);
         ServerPlayer player = context.getSource().getPlayer();
@@ -212,7 +219,7 @@ public class TestMod implements ModInitializer {
         return 0;
     }
 
-    public void onInitialize() {
+    public TestMod(IEventBus modEventBus, ModContainer modContainer) {
 
 
         record ExampleClass(int n) {}
@@ -223,10 +230,10 @@ public class TestMod implements ModInitializer {
         System.out.println(a == b);
         System.out.println(a.equals(b));
         System.out.println(a.hashCode() == b.hashCode());
-        
-        
-        
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, dedicated) -> {
+
+
+        NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent.class, registerCommandsEvent -> {
+            var dispatcher = registerCommandsEvent.getDispatcher();
             /*dispatcher.register(
                     literal("test").then(argument("component", ComponentArgument.textComponent(registryAccess)).executes(TestMod::test))
             );*/
