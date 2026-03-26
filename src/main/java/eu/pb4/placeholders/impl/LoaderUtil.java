@@ -1,9 +1,8 @@
 package eu.pb4.placeholders.impl;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.FabricLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 
 public class LoaderUtil {
-    public static final boolean IS_DEV = FabricLoader.getInstance().isDevelopmentEnvironment();
-    public static final boolean IS_CLIENT = FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT;
+    public static final boolean IS_DEV = !FMLEnvironment.isProduction();
+    public static final boolean IS_CLIENT = FMLEnvironment.getDist().isClient();
 }

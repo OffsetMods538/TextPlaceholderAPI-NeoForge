@@ -4,8 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import eu.pb4.placeholders.api.*;
 import eu.pb4.placeholders.api.parsers.NodeParser;
 import eu.pb4.placeholders.api.parsers.TagLikeParser;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
 
@@ -13,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-@Environment(EnvType.CLIENT)
 public class ClientPlaceholders {
     private static final HashMap<Identifier, Placeholder<ClientPlaceholderContext, ?>> CLIENT_PLACEHOLDERS = new HashMap<>();
     public static final Placeholders.PlaceholderGetter<ClientPlaceholderContext> CLIENT_PLACEHOLDER_GETTER = placeholder -> getClientPlaceholder(Identifier.tryParse(placeholder));
