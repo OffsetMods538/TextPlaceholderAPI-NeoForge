@@ -30,13 +30,14 @@ ext {
 	}
 	final String versionSuffix = System.getenv("VERSION_SUFFIX")
 	versionPrefix = "${versionPrefix}${versionSuffix == null ? "+local" : versionSuffix.isEmpty() ? "" : "+${versionSuffix}"}" as GStringImpl
+	versionPrefix = "${versionPrefix}+neoforge+${project.minecraft_version}"
 
-	System.out.println("Version Prefix: " + versionPrefix)
+	System.out.println("Version: " + versionPrefix)
 }
 
 base {
 	archivesName = project.mod_id
-	version = "${project.versionPrefix}+neoforge+${project.minecraft_version}"
+	version = project.versionPrefix
 }
 
 neoForgeModsToml {
