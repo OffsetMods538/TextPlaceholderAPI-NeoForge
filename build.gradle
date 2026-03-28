@@ -1,4 +1,7 @@
 import dex.plugins.outlet.v2.util.ReleaseType
+import org.codehaus.groovy.runtime.GStringImpl
+
+import java.nio.file.Files
 
 plugins {
 	id 'maven-publish'
@@ -8,12 +11,33 @@ plugins {
 	id 'io.github.dexman545.outlet' version "1.7.0-alpha.5"
 }
 
-base {
-	archivesName = "${project.mod_id}-neoforge"
-	version = project.mod_version
+ext {
+	neo_mod_id = project.mod_id.replace('-', '_');
+
+	versionPrefix = project.mod_version
+	if (!Boolean.parseBoolean(System.getenv("IS_RELEASE"))) {
+		String preReleaseVersion = System.currentTimeMillis()
+
+		if (Boolean.parseBoolean(System.getenv("PRESERVE_PRERELEASE_VERSION"))) {
+			var preReleaseVersionFile = file("preReleaseVersion.txt").toPath()
+			if (Files.exists(preReleaseVersionFile)) preReleaseVersion = Files.readString(preReleaseVersionFile)
+			Files.writeString(preReleaseVersionFile, preReleaseVersion)
+		}
+
+		var separator = "-"
+		if (versionPrefix.contains("-")) separator = "."
+		versionPrefix = "${versionPrefix}${separator}${preReleaseVersion}" as GStringImpl
+	}
+	final String versionSuffix = System.getenv("VERSION_SUFFIX")
+	versionPrefix = "${versionPrefix}${versionSuffix == null ? "+local" : versionSuffix.isEmpty() ? "" : "+${versionSuffix}"}" as GStringImpl
+
+	System.out.println("Version Prefix: " + versionPrefix)
 }
 
-ext.neo_mod_id = project.mod_id.replace('-', '_');
+base {
+	archivesName = project.mod_id
+	version = "${project.versionPrefix}+neoforge+${project.minecraft_version}"
+}
 
 neoForgeModsToml {
 	issueTrackerUrl = rootProject.mod_issues
