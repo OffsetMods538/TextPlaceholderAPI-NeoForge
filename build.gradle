@@ -14,7 +14,7 @@ plugins {
 ext {
 	neo_mod_id = project.mod_id.replace('-', '_');
 
-	versionPrefix = project.mod_version
+	var versionPrefixTemp = project.mod_version
 	if (!Boolean.parseBoolean(System.getenv("IS_RELEASE"))) {
 		String preReleaseVersion = System.currentTimeMillis()
 
@@ -25,12 +25,14 @@ ext {
 		}
 
 		var separator = "-"
-		if (versionPrefix.contains("-")) separator = "."
-		versionPrefix = "${versionPrefix}${separator}${preReleaseVersion}" as GStringImpl
+		if (versionPrefixTemp.contains("-")) separator = "."
+		versionPrefixTemp = "${versionPrefixTemp}${separator}${preReleaseVersion}"
 	}
 	final String versionSuffix = System.getenv("VERSION_SUFFIX")
-	versionPrefix = "${versionPrefix}${versionSuffix == null ? "+local" : versionSuffix.isEmpty() ? "" : "+${versionSuffix}"}" as GStringImpl
-	versionPrefix = "${versionPrefix}+neoforge+${project.minecraft_version}"
+	versionPrefixTemp = "${versionPrefixTemp}${versionSuffix == null ? "+local" : versionSuffix.isEmpty() ? "" : "+${versionSuffix}"}"
+	versionPrefixTemp = "${versionPrefixTemp}+neoforge+${project.minecraft_version}"
+
+	versionPrefix = versionPrefixTemp as GStringImpl
 
 	System.out.println("Version: " + versionPrefix)
 }
@@ -40,6 +42,11 @@ base {
 	version = project.versionPrefix
 }
 
+outlet {
+	mcVersionRange = project.supported_minecraft_versions
+	allowedReleaseTypes = Set.of(ReleaseType.RELEASE)
+}
+
 neoForgeModsToml {
 	issueTrackerUrl = rootProject.mod_issues
 	mod(rootProject.neo_mod_id) {
@@ -47,7 +54,7 @@ neoForgeModsToml {
 		version = project.version
 		displayName = rootProject.mod_name
 		description = rootProject.mod_description
-		authors = "Patbox"
+		authors = "Patbox,OffsetMonkey538"
 		logoFile = "assets/${rootProject.mod_id}/icon.png"
 		logoBlur = false
 		features = ["javaVersion": "[25,)"]
@@ -57,10 +64,6 @@ neoForgeModsToml {
 			required("minecraft",  project.minecraft_version_range)
 		}
 	}
-}
-outlet {
-	mcVersionRange = project.supported_minecraft_versions
-	allowedReleaseTypes = Set.of(ReleaseType.RELEASE)
 }
 
 repositories {
@@ -112,6 +115,7 @@ neoForge {
 }
 
 tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
 	it.options.release = 25
 }
 
