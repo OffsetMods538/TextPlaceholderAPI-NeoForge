@@ -1,6 +1,7 @@
 package eu.pb4.placeholders.impl.client;
 
 import com.mojang.authlib.GameProfile;
+import eu.pb4.placeholders.api.PlaceholderContext;
 import eu.pb4.placeholders.api.client.ClientPlaceholderContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -13,6 +14,10 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public record ClientPlaceholderContextImpl(Minecraft minecraft, ViewObject view) implements ClientPlaceholderContext {
+    public static PlaceholderContext of(ViewObject view) {
+        return new ClientPlaceholderContextImpl(Minecraft.getInstance(), view);
+    }
+
     @Override
     public ClientPlaceholderContext withView(ViewObject view) {
         return new ClientPlaceholderContextImpl(this.minecraft, view);
