@@ -30,7 +30,7 @@ ext {
 	}
 	final String versionSuffix = System.getenv("VERSION_SUFFIX")
 	versionPrefixTemp = "${versionPrefixTemp}${versionSuffix == null ? "+local" : versionSuffix.isBlank() ? "" : "+${versionSuffix}"}"
-	versionPrefixTemp = "${versionPrefixTemp}+neoforge+${project.minecraft_version}"
+	versionPrefixTemp = "${versionPrefixTemp}+${project.project_name.replaceFirst("-", "+")}"
 
 	versionPrefix = versionPrefixTemp as GStringImpl
 
