@@ -34,3 +34,6 @@ run/
 
 # mkdocs
 .cache
+
+# direnv
+.direnv
