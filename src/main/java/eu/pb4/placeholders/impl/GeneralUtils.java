@@ -2,7 +2,7 @@ package eu.pb4.placeholders.impl;
 
 import eu.pb4.placeholders.api.node.*;
 import eu.pb4.placeholders.api.node.parent.*;
-import net.fabricmc.loader.api.FabricLoader;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.*;
@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 @ApiStatus.Internal
 public class GeneralUtils {
     public static final Logger LOGGER = LoggerFactory.getLogger("Text Placeholder API");
-    public static final boolean IS_DEV = FabricLoader.getInstance().isDevelopmentEnvironment();
+    public static final boolean IS_DEV = !FMLEnvironment.isProduction();
     public static final TextNode[] CASTER = new TextNode[0];
 
     public static String durationToString(long x) {

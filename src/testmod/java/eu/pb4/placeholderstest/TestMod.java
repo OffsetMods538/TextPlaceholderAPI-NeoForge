@@ -12,8 +12,6 @@ import eu.pb4.placeholders.api.node.LiteralNode;
 import eu.pb4.placeholders.api.node.TextNode;
 import eu.pb4.placeholders.api.parsers.*;
 import it.unimi.dsi.fastutil.Pair;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.ComponentArgument;
 import net.minecraft.core.RegistryAccess;
@@ -21,6 +19,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +32,8 @@ import static net.minecraft.commands.Commands.argument;
 
 
 @SuppressWarnings("deprecation")
-public class TestMod implements ModInitializer {
+@Mod("testmod")
+public class TestMod {
     private static int perf(CommandContext<CommandSourceStack> context) {
         var input = context.getArgument("text", String.class);
         ServerPlayer player = context.getSource().getPlayer();
@@ -305,8 +309,10 @@ public class TestMod implements ModInitializer {
         return 0;
     }
 
-    public void onInitialize() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, dedicated) -> {
+    public TestMod(IEventBus modEventBus, ModContainer modContainer) {
+        NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent.class, event -> {
+            var dispatcher = event.getDispatcher();
+            var registryAccess = event.getBuildContext();
             dispatcher.register(
                     literal("test").then(argument("text", ComponentArgument.textComponent(registryAccess)).executes(TestMod::test))
             );

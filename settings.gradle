@@ -8,5 +8,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'placeholder-api'
+rootProject.name = 'placeholder-api-neoforge'
 

@@ -1,24 +1,72 @@
+import dex.plugins.outlet.v2.util.ReleaseType
+import org.codehaus.groovy.runtime.GStringImpl
+
+import java.nio.file.Files
+
 plugins {
-	id 'fabric-loom' version '1.13.+'
 	id 'maven-publish'
 	id "com.modrinth.minotaur" version "2.+"
-	id 'com.matthewprenger.cursegradle' version '1.4.0'
+	id 'net.neoforged.moddev' version "2.0.+"
+	id 'xyz.jpenilla.resource-factory-neoforge-convention' version "1.3.1"
+	id 'io.github.dexman545.outlet' version "1.8.0"
+}
+
+ext {
+	neo_mod_id = project.mod_id.replace('-', '_');
+
+	var versionPrefixTemp = project.mod_version
+	if (!Boolean.parseBoolean(System.getenv("IS_RELEASE"))) {
+		String preReleaseVersion = System.currentTimeMillis()
+
+		if (Boolean.parseBoolean(System.getenv("PRESERVE_PRERELEASE_VERSION"))) {
+			var preReleaseVersionFile = file("preReleaseVersion.txt").toPath()
+			if (Files.exists(preReleaseVersionFile)) preReleaseVersion = Files.readString(preReleaseVersionFile)
+			Files.writeString(preReleaseVersionFile, preReleaseVersion)
+		}
+
+		var separator = "-"
+		if (versionPrefixTemp.contains("-")) separator = "."
+		versionPrefixTemp = "${versionPrefixTemp}${separator}${preReleaseVersion}"
+	}
+	final String versionSuffix = System.getenv("VERSION_SUFFIX")
+	versionPrefixTemp = "${versionPrefixTemp}${versionSuffix == null ? "+local" : versionSuffix.isBlank() ? "" : "+${versionSuffix}"}"
+	versionPrefixTemp = "${versionPrefixTemp}+${project.project_name.replaceFirst("-", "+")}"
+
+	versionPrefix = versionPrefixTemp as GStringImpl
+
+	System.out.println("Version: " + versionPrefix)
 }
 
 base {
-	archivesName = project.archives_base_name
-	version = project.mod_version
-	group = project.maven_group
+	archivesName = project.mod_id
+	version = project.versionPrefix
 }
 
+outlet {
+	mcVersionRange = project.supported_minecraft_versions
+	allowedReleaseTypes = Set.of(ReleaseType.RELEASE)
+}
+
+neoForgeModsToml {
+	issueTrackerUrl = rootProject.mod_issues
+	mod(rootProject.neo_mod_id) {
+		setLicense("LGPLv3")
+		version = project.version
+		displayName = rootProject.mod_name
+		description = rootProject.mod_description
+		authors = "Patbox,OffsetMonkey538"
+		logoFile = "assets/${rootProject.mod_id}/icon.png"
+		logoBlur = false
+		features = ["javaVersion": "[21,)"]
+		modUrl = rootProject.mod_sources
+		displayUrl = rootProject.mod_website
+		dependencies {
+			required("minecraft",  project.minecraft_version_range)
+		}
+	}
+}
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
-
 	maven { url = "https://maven.nucleoid.xyz" }
 	maven { url = "https://jitpack.io" }
 }
@@ -30,72 +78,58 @@ sourceSets {
 	}
 }
 
-loom {
-	runs {
-		testmodClient {
-			client()
-			ideConfigGenerated project.rootProject == project
-			name = "Test Mod Client"
-			source = sourceSets.testmod
-		}
-		testmodServer {
-			server()
-			ideConfigGenerated project.rootProject == project
-			name = "Test Mod Server"
-			source = sourceSets.testmod
-		}
-	}
-}
-
 dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	//modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	modCompileOnly("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
-	modLocalRuntime("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}")
-
-	// PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
-	// You may need to force-disable transitiveness on them.
 	testmodImplementation sourceSets.main.output
 }
 
-processResources {
-	inputs.property "version", project.version
+neoForge {
+	version = project.neoforge_version
 
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+	mods {
+		"${project.neo_mod_id}" {
+			sourceSet(sourceSets.main)
+		}
+		"testmod" {
+			sourceSet(sourceSets.testmod)
+		}
+	}
+
+	runs {
+		testmodClient {
+			client()
+			ideName = "Test Mod Client"
+			sourceSet = sourceSets.testmod
+		}
+
+		testmodServer {
+			server()
+			ideName = "Test Mod Server"
+			sourceSet = sourceSets.testmod
+		}
+
+		configureEach {
+			systemProperty 'forge.logging.markers', 'REGISTRIES'
+			logLevel = org.slf4j.event.Level.INFO
+		}
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	// ensure that the encoding is set to UTF-8, no matter what the system default is
-	// this fixes some edge cases with special characters not displaying correctly
-	// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-	// If Javadoc is generated, this must be specified in that task too.
 	it.options.encoding = "UTF-8"
-
-	// The Minecraft launcher currently installs Java 8 for users, so your mod probably wants to target Java 8 too
-	// JDK 9 introduced a new way of specifying this that will make sure no newer classes or methods are used.
-	// We'll use that if it's available, but otherwise we'll use the older option.
 	it.options.release = 21
 }
 
 java {
+	toolchain.languageVersion = JavaLanguageVersion.of(21)
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
+
 	withSourcesJar()
 }
 
 jar {
 	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
+		rename { "${it}_${base.archivesName.get()}"}
 	}
 }
 
@@ -103,83 +137,61 @@ def env = System.getenv()
 
 // configure the maven publication
 publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			//artifactId = base.archivesName.get()
-			// add all the jars that should be included when publishing to maven
-			artifact(remapJar) {
-				builtBy remapJar
-			}
-			artifact(sourcesJar) {
-				builtBy remapSourcesJar
-			}
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
 	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-		repositories {
-			if (env.MAVEN_URL) {
-				maven {
-					credentials {
-						username env.MAVEN_USERNAME
-						password env.MAVEN_PASSWORD
-					}
-					url env.MAVEN_URL
-				}
-			} else {
-				mavenLocal()
+		maven {
+			name = "OffsetMonkey538"
+			url = "https://maven.offsetmonkey538.top/releases"
+			credentials {
+				username = providers.gradleProperty("OffsetMonkey538Username").getOrElse(System.getenv("MAVEN_USERNAME"))
+				password = providers.gradleProperty("OffsetMonkey538Password").getOrElse(System.getenv("MAVEN_PASSWORD"))
+			}
+			authentication {
+				basic(BasicAuthentication)
 			}
 		}
 	}
-}
-
-if (System.getenv("MODRINTH")) {
-	modrinth {
-		token = System.getenv("MODRINTH")
-		projectId = 'eXts2L7r'// The ID of your modrinth project, slugs will not work.
-		versionNumber = "" + version // The version of the mod to upload.
-		versionType = "release"
-		uploadFile = remapJar // This links to a task that builds your mod jar and sets "uploadFile" to the mod jar.
-		gameVersions = [((String) project.minecraft_version)]
-		changelog = System.getenv("CHANGELOG")
-		loaders = ["fabric", "quilt"]
-	}
-
-	remapJar {
-		finalizedBy project.tasks.modrinth
-	}
-}
-
-
-curseforge {
-	if (System.getenv("CURSEFORGE")) {
-		apiKey = System.getenv("CURSEFORGE")
-
-		project {
-			id = "1037459"
-			releaseType = "release"
-			changelog = System.getenv("CHANGELOG")
-			changelogType = "markdown"
-			addGameVersion((project.minecraft_version.contains("-") ? ((String) project.minecraft_version.split("-")[0] + "-snapshot") : project.minecraft_version))
-			addGameVersion "Fabric"
-			addGameVersion "Quilt"
-			mainArtifact(remapJar)
-
+	publications {
+		register("maven", MavenPublication) {
 			afterEvaluate {
-				uploadTask.dependsOn("remapJar")
+				artifactId base.archivesName.get()
 			}
+			groupId "eu.pb4"
+			from components.java
 		}
 	}
+}
 
-	options {
-		forgeGradleIntegration = false
-	}
-	remapJar {
-		finalizedBy project.tasks.curseforge
-	}
+modrinth {
+	debugMode = Boolean.parseBoolean(System.getenv("MODRINTH_DEBUG"))
+
+	// Main properties
+	token = System.getenv("MODRINTH_TOKEN")
+	projectId = rootProject.mod_id
+	gameVersions = outlet.mcVersions()
+	loaders = ["neoforge"]
+
+
+	// Version stuff
+	def customVersionName = System.getenv("VERSION_NAME")
+	if (customVersionName != null) versionName = customVersionName
+
+	versionNumber = "${project.version}"
+
+	def isPreRelease = System.getenv("VERSION_IS_PRERELEASE")
+	versionType = Boolean.parseBoolean(isPreRelease) ? "beta" : "release"
+
+	if (project.mod_version.contains("beta")) versionType = "beta"
+	if (project.mod_version.contains("alpha")) versionType = "alpha"
+
+
+	// Files
+	uploadFile = jar
+	additionalFiles = [sourcesJar]
+
+
+	// Project info
+	def changelogEnv = System.getenv("VERSION_CHANGELOG")
+	if (changelogEnv != null) changelog = changelogEnv
+
+	autoAddDependsOn = false
 }
