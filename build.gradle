@@ -44,7 +44,7 @@ base {
 
 outlet {
 	mcVersionRange = project.supported_minecraft_versions
-	allowedReleaseTypes = Set.of(ReleaseType.SNAPSHOT)
+	allowedReleaseTypes = Set.of(ReleaseType.RELEASE)
 }
 
 neoForgeModsToml {
